@@ -1,13 +1,17 @@
 # Ignore Maven build output
 target/
 
-# Ignore Git files
+# Git version control
 .git
+.gitignore
 
-# IDE config files
+# IDE folders
 .idea
 *.iml
 
-# OS files
+# OS generated files
 .DS_Store
 Thumbs.db
+
+# Other unnecessary files
+*.log
