@@ -1,28 +1,30 @@
-# Start from an official Java 17 image
-FROM eclipse-temurin:17-jdk-alpine
+# Use a Maven image to build the project
+FROM maven:3.9.2-eclipse-temurin-17 AS build
 
-# Set the working directory inside the container
+# Set working directory
 WORKDIR /app
 
-# Copy Maven wrapper and pom.xml first to leverage caching
-COPY mvnw .
-COPY .mvn .mvn
+# Copy pom.xml and download dependencies (cache them)
 COPY pom.xml .
+RUN mvn dependency:go-offline
 
-# Make mvnw executable
-RUN chmod +x mvnw
-
-# Download dependencies only (faster builds on subsequent runs)
-RUN ./mvnw dependency:go-offline -B
-
-# Copy the rest of your source code
+# Copy the rest of the project
 COPY src ./src
 
-# Build the application (skip tests for faster builds)
-RUN ./mvnw clean package -DskipTests
+# Build the Spring Boot application
+RUN mvn clean package -DskipTests
+
+# Use a minimal JDK image to run the app
+FROM eclipse-temurin:17-jre-alpine
+
+# Set working directory
+WORKDIR /app
+
+# Copy the jar built in the previous stage
+COPY --from=build /app/target/appointment-scheduler-0.0.1-SNAPSHOT.jar app.jar
 
 # Expose the default Spring Boot port
 EXPOSE 8080
 
-# Run the jar (Spring Boot fat jar)
-CMD ["java", "-jar", "target/appointment-scheduler-0.0.1-SNAPSHOT.jar"]
+# Start the application
+ENTRYPOINT ["java","-jar","app.jar"]
